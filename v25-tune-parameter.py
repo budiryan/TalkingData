@@ -19,8 +19,14 @@ Experimenting with skopt's bayesian hyperparameter tuning
 
 # Data Constant definitions
 DEBUG = True
-NCHUNK = 184903890
-OFFSET = 184903890
+
+# Full dataset
+# NCHUNK = 184903890
+# OFFSET = 184903890
+
+NCHUNK = 75000000
+OFFSET = 75000000
+
 NROWS = 184903890
 VAL_SIZE = 2500000
 MISSING = -1
