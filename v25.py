@@ -55,7 +55,7 @@ def do_count(df, group_cols, agg_name, agg_type='int32', show_max=False, show_ag
     del gp
     if show_max:
         print(agg_name + " max value = ", df[agg_name].max())
-    df[agg_name] = df[agg_name].astype(agg_type).fillna(0)
+    df[agg_name] = df[agg_name].fillna(0).astype(agg_type)
     gc.collect()
     return df, agg_name
 
@@ -69,7 +69,7 @@ def do_countuniq(df, group_cols, counted, agg_name, agg_type='int32', show_max=F
     del gp
     if show_max:
         print(agg_name + " max value = ", df[agg_name].max())
-    df[agg_name] = df[agg_name].astype(agg_type).fillna(0)
+    df[agg_name] = df[agg_name].fillna(0).astype(agg_type)
     gc.collect()
     return df, agg_name
 
@@ -82,7 +82,7 @@ def do_cumcount(df, group_cols, counted, agg_name, agg_type='int32', show_max=Fa
     del gp
     if show_max:
         print(agg_name + " max value = ", df[agg_name].max())
-    df[agg_name] = df[agg_name].astype(agg_type).fillna(0)
+    df[agg_name] = df[agg_name].fillna(0).astype(agg_type)
     gc.collect()
     return df, agg_name
 
@@ -96,7 +96,7 @@ def do_mean(df, group_cols, counted, agg_name, agg_type='float32', show_max=Fals
     del gp
     if show_max:
         print(agg_name + " max value = ", df[agg_name].max())
-    df[agg_name] = df[agg_name].astype(agg_type).fillna(0)
+    df[agg_name] = df[agg_name].fillna(0).astype(agg_type)
     gc.collect()
     return df, agg_name
 
@@ -109,7 +109,7 @@ def do_var(df, group_cols, counted, agg_name, agg_type='float32', show_max=False
     del gp
     if show_max:
         print(agg_name + " max value = ", df[agg_name].max())
-    df[agg_name] = df[agg_name].astype(agg_type).fillna(0)
+    df[agg_name] = df[agg_name].fillna(0).astype(agg_type)
     gc.collect()
     return df, agg_name
 
@@ -120,7 +120,7 @@ def do_next_click(df, group_cols, agg_name, agg_type='float32', show_min=False, 
     df[agg_name] = (df.groupby(group_cols).click_time.shift(-1)
                               .fillna(3000000000) - df.click_time).astype(agg_type)
     if show_min:
-        print(agg_name + " mean value = ", df[agg_name].min())
+        print(agg_name + " mean value = ", df[agg_name].mean())
     return df, agg_name
 
 
@@ -130,7 +130,7 @@ def do_prev_click(df, group_cols, agg_name, agg_type='float32', show_min=False, 
     df[agg_name] = (df.groupby(group_cols).click_time.shift(-1)
                               .fillna(3000000000) - df.click_time).astype(agg_type)
     if show_min:
-        print(agg_name + " mean value = ", df[agg_name].min())
+        print(agg_name + " mean value = ", df[agg_name].mean())
     return df, agg_name
 
 
@@ -319,7 +319,7 @@ if __name__ == '__main__':
         'reg_alpha': 0,  # L1 regularization term on weights
         'reg_lambda': 0,  # L2 regularization term on weights
         'nthread': NUM_CORES,
-        'verbose': 0
+        'verbose': 0,
     }
 
     print("Preparing training and validation datasets")

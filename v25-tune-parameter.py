@@ -300,7 +300,7 @@ if __name__ == '__main__':
     space = [Integer(3, 10, name='max_depth'),
              Integer(6, 30, name='num_leaves'),
              Integer(20, 200, name='min_child_samples'),
-             Real(100, 400,  name='scale_pos_weight'),
+             Real(250, 400,  name='scale_pos_weight'),
              Real(0.2, 0.7, name='subsample'),
              Real(0.2, 0.7, name='colsample_bytree'),
              Integer(50, 255, name='max_bin')
