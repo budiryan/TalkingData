@@ -24,11 +24,11 @@ DEBUG = True
 # NCHUNK = 184903890
 # OFFSET = 184903890
 
-NCHUNK = 75000000
-OFFSET = 75000000
+NCHUNK = 2500000
+OFFSET = 2500000
 
 NROWS = 184903890
-VAL_SIZE = 2500000
+VAL_SIZE = 200000
 MISSING = -1
 VERSION_NUM = '_v25_'
 DTYPES = {
@@ -126,7 +126,7 @@ def do_next_click(df, group_cols, agg_name, agg_type='float32', show_min=False, 
     df[agg_name] = (df.groupby(group_cols).click_time.shift(-1)
                               .fillna(3000000000) - df.click_time).astype(agg_type)
     if show_min:
-        print(agg_name + " mean value = ", df[agg_name].min())
+        print(agg_name + " mean value = ", df[agg_name].mean())
     return df, agg_name
 
 
@@ -136,7 +136,7 @@ def do_prev_click(df, group_cols, agg_name, agg_type='float32', show_min=False, 
     df[agg_name] = (df.groupby(group_cols).click_time.shift(-1)
                               .fillna(3000000000) - df.click_time).astype(agg_type)
     if show_min:
-        print(agg_name + " mean value = ", df[agg_name].min())
+        print(agg_name + " mean value = ", df[agg_name].mean())
     return df, agg_name
 
 
@@ -359,7 +359,7 @@ if __name__ == '__main__':
                         evals_result=evals_results,
                         num_boost_round=num_boost_round,
                         early_stopping_rounds=early_stopping_rounds,
-                        verbose_eval=None,
+                        verbose_eval=50,
                         feval=None)
 
         auc = -roc_auc_score(val_df[target], bst.predict(val_df[predictors], num_iteration=bst.best_iteration))
@@ -400,39 +400,3 @@ if __name__ == '__main__':
                                         res_gp.x[2], res_gp.x[3], 
                                         res_gp.x[4], res_gp.x[5],
                                         res_gp.x[6]))
-
-
-    # print("\nModel Report")
-    # print("bst.best_iteration: ", bst.best_iteration)
-    # print(metrics + ":", evals_results['valid'][metrics][bst.best_iteration - 1])
-
-    
-
-    # print('The required time for tuning hyperparameter is: hour:minute:second = %s' % (
-    #     datetime.timedelta(seconds=time.time() - start_time)))
-
-    # print('Saving the trained lightgbm model')
-    # bst.save_model(MODElPATH + 'bst' + VERSION_NUM + '.txt')
-
-    # print('Re-reading test data...')
-    # test_df = pd.read_pickle(PICKLEPATH + 'test' + VERSION_NUM + '.pkl.gz')
-    # submission = pd.DataFrame()
-
-    # print('Predicting...')
-    # y_pred = bst.predict(test_df[predictors], num_iteration=bst.best_iteration)
-
-    # print('FEATURE IMPORTANCE: ')
-    # gain = bst.feature_importance('gain')
-    # ft = pd.DataFrame({'feature': bst.feature_name(), 'split': bst.feature_importance('split'),
-    #                    'gain': 100 * gain / gain.sum()}).sort_values('gain', ascending=False)
-    # ft.to_csv(FEATUREPATH + VERSION_NUM + '.csv')
-    # print(ft)
-
-    # submission['click_id'] = test_df['click_id'].astype('uint32').values
-    # submission['is_attributed'] = y_pred
-
-    # print('Saving the prediction result...')
-    # submission.to_csv(SUBMISSIONPATH+ 'submission' + VERSION_NUM + '.csv', index=False, float_format='%.9f')
-
-    # print('Done')
-    # print(submission.head(3))
