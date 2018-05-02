@@ -6,11 +6,14 @@ import datetime
 import os
 import lightgbm as lgb
 
-from sklearn.preprocessing import Imputer
-
+from skopt.space import Real, Integer
+from skopt.utils import use_named_args
+import itertools
+from sklearn.metrics import roc_auc_score
+from skopt import gp_minimize
 
 '''
-# Only generate data
+Experimenting with skopt's bayesian hyperparameter tuning
 '''
 
 # Data Constant definitions
@@ -289,40 +292,19 @@ if __name__ == '__main__':
 
     '''
     #######################
-    #   MODELLING  #
+    #   MODELLING         #
     #######################
     '''
-    # Using LightGBM
-    start_time = time.time()
-    objective = 'binary'
-    metrics = 'auc'
-    early_stopping_rounds = 50
-    verbose_eval = True
-    num_boost_round = 1500
-    categorical_features = categorical
-    lgb_params = {
-        'boosting_type': 'gbdt',
-        'objective': objective,
-        'metric': metrics,
-        'learning_rate': 0.1,
-        'num_leaves': 7,  # 2^max_depth - 1
-        'max_depth': 3,  # -1 means no limit
-        'min_child_samples': 100,  # Minimum number of data need in a child(min_data_in_leaf)
-        'max_bin': 100,  # Number of bucketed bin for feature values
-        'subsample': 0.3,  # Subsample ratio of the training instance.
-        'subsample_freq': 1,  # frequence of subsample, <=0 means no enable
-        'colsample_bytree': 0.3,  # Subsample ratio of columns when constructing each tree.
-        'min_child_weight': 0,  # Minimum sum of instance weight(hessian) needed in a child(leaf)
-        'scale_pos_weight': 400,  # because training data is extremely unbalanced
-        'subsample_for_bin': 200000,  # Number of samples for constructing bin
-        'min_split_gain': 0,  # lambda_l1, lambda_l2 and min_gain_to_split to regularization
-        'reg_alpha': 0,  # L1 regularization term on weights
-        'reg_lambda': 0,  # L2 regularization term on weights
-        'nthread': NUM_CORES,
-        'verbose': 0,
-    }
+    start_time = time.time()    
+    space = [Integer(3, 10, name='max_depth'),
+             Integer(6, 30, name='num_leaves'),
+             Integer(20, 200, name='min_child_samples'),
+             Real(100, 400,  name='scale_pos_weight'),
+             Real(0.2, 0.9, name='subsample'),
+             Real(0.2, 0.9, name='colsample_bytree')
+            ]
 
-    print("Preparing validation datasets")
+    print("Preparing train and val datasets")
     xgtrain = lgb.Dataset(train_df[predictors].values, label=train_df[target].values,
                           feature_name=predictors,
                           categorical_feature=categorical
@@ -337,6 +319,36 @@ if __name__ == '__main__':
                           )
     del val_df
     gc.collect()
+
+
+    # Using LightGBM with Bayesian Parameter Tuning optimization
+    early_stopping_rounds = 50
+    verbose_eval = True
+    num_boost_round = 1000
+
+    lgb_params = {
+        'max_depth': 3,  # -1 means no limit
+        'num_leaves': 7,  # 2^max_depth - 1
+        'subsample': 0.3,  # Subsample ratio of the training instance.
+        'colsample_bytree': 0.3,  # Subsample ratio of columns when constructing each tree.
+        'scale_pos_weight': 400,  # because training data is extremely unbalanced
+        'max_bin': 100,  # Number of bucketed bin for feature values
+        'min_child_samples': 100,  # Minimum number of data need in a child(min_data_in_leaf)
+
+
+        'boosting_type': 'gbdt',
+        'objective': 'binary',
+        'metric': 'auc',
+        'learning_rate': 0.1,
+        'subsample_freq': 1,  # frequence of subsample, <=0 means no enable
+        'min_child_weight': 0,  # Minimum sum of instance weight(hessian) needed in a child(leaf)
+        'subsample_for_bin': 200000,  # Number of samples for constructing bin
+        'min_split_gain': 0,  # lambda_l1, lambda_l2 and min_gain_to_split to regularization
+        'reg_alpha': 0,  # L1 regularization term on weights
+        'reg_lambda': 0,  # L2 regularization term on weights
+        'nthread': NUM_CORES,
+        'verbose': 0
+    }
 
     evals_results = {}
     print('LGB PARAMETER: ', lgb_params)
