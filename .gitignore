@@ -1,0 +1,6 @@
+bin/
+data/
+pickle/
+sub/
+model/
+.ipynb_checkpoints/
