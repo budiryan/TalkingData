@@ -11,13 +11,14 @@ from skopt.utils import use_named_args
 import itertools
 from sklearn.metrics import roc_auc_score
 from skopt import gp_minimize
+from skopt import dump
 
 '''
 Experimenting with skopt's bayesian hyperparameter tuning
 '''
 
 # Data Constant definitions
-DEBUG = False
+DEBUG = True
 NCHUNK = 184903890
 OFFSET = 184903890
 NROWS = 184903890
@@ -40,6 +41,7 @@ SUBMISSIONPATH = 'sub/'
 PICKLEPATH = 'pickle/'
 MODElPATH = 'model/'
 FEATUREPATH = 'feature/'
+SKOPTPATH = 'skopt/'
 
 # Performance stuff
 NUM_CORES = 4 if DEBUG else 8
@@ -164,11 +166,7 @@ if __name__ == '__main__':
     #######################
     '''
     start = time.time()
-    imputer = Imputer()
     print('Start feature engineering...')
-
-
-    print('Imputing missing values ...')
     train_df['click_id'] = MISSING; train_df['click_id'] = train_df.click_id.astype('int32')
     len_train = len(train_df)
     gc.collect()
@@ -266,9 +264,6 @@ if __name__ == '__main__':
     else:
         print('Train file is there, no need to save')
 
-    del train_df
-    gc.collect()
-
     if not os.path.isfile(PICKLEPATH + 'val' + VERSION_NUM + '.pkl.gz'):
         print('Saving val file')
         val_df.to_pickle(PICKLEPATH + 'val' + VERSION_NUM + '.pkl.gz')
@@ -300,14 +295,16 @@ if __name__ == '__main__':
              Integer(6, 30, name='num_leaves'),
              Integer(20, 200, name='min_child_samples'),
              Real(100, 400,  name='scale_pos_weight'),
-             Real(0.2, 0.9, name='subsample'),
-             Real(0.2, 0.9, name='colsample_bytree')
+             Real(0.2, 0.7, name='subsample'),
+             Real(0.2, 0.7, name='colsample_bytree'),
+             Integer(50, 255, name='max_bin')
             ]
 
     print("Preparing train and val datasets")
     xgtrain = lgb.Dataset(train_df[predictors].values, label=train_df[target].values,
                           feature_name=predictors,
-                          categorical_feature=categorical
+                          categorical_feature=categorical,
+                          free_raw_data=False
                           )
     del train_df
     gc.collect()
@@ -315,82 +312,121 @@ if __name__ == '__main__':
 
     xgvalid = lgb.Dataset(val_df[predictors].values, label=val_df[target].values,
                           feature_name=predictors,
-                          categorical_feature=categorical
+                          categorical_feature=categorical,
+                          free_raw_data=False
                           )
-    del val_df
-    gc.collect()
+
+    def objective(values):
+        # Using LightGBM with Bayesian Parameter Tuning optimization
+        early_stopping_rounds = 50
+        verbose_eval = True
+        num_boost_round = 1000
+
+        lgb_params = {
+            'max_depth': values[0],  # -1 means no limit
+            'num_leaves': values[1],  # 2^max_depth - 1
+            'min_child_samples': values[2],  # Minimum number of data need in a child(min_data_in_leaf)
+            'scale_pos_weight': values[3],  # because training data is extremely unbalanced
+            'subsample': values[4],  # Subsample ratio of the training instance.
+            'colsample_bytree': values[5],  # Subsample ratio of columns when constructing each tree.
+            'max_bin': values[6],  # Number of bucketed bin for feature values
+            'boosting_type': 'gbdt',
+            'objective': 'binary',
+            'metric': 'auc',
+            'learning_rate': 0.1,
+            'subsample_freq': 1,  # frequence of subsample, <=0 means no enable
+            'min_child_weight': 0,  # Minimum sum of instance weight(hessian) needed in a child(leaf)
+            'subsample_for_bin': 200000,  # Number of samples for constructing bin
+            'min_split_gain': 0,  # lambda_l1, lambda_l2 and min_gain_to_split to regularization
+            'reg_alpha': 0,  # L1 regularization term on weights
+            'reg_lambda': 0,  # L2 regularization term on weights
+            'nthread': NUM_CORES,
+            'verbose': 0
+        }
+
+        evals_results = {}
+        print('LGB PARAMETER: ', lgb_params)
+        bst = lgb.train(lgb_params,
+                        xgtrain,
+                        valid_sets=[xgtrain, xgvalid],
+                        valid_names=['train', 'valid'],
+                        evals_result=evals_results,
+                        num_boost_round=num_boost_round,
+                        early_stopping_rounds=early_stopping_rounds,
+                        verbose_eval=None,
+                        feval=None)
+
+        auc = -roc_auc_score(val_df[target], bst.predict(val_df[predictors], num_iteration=bst.best_iteration))
+
+        print('\nAUROC.....',-auc,".....iter.....", bst.current_iteration())
+
+        gc.collect()
+        return auc
+
+    res_gp = gp_minimize(objective, space, n_calls=20,
+                     random_state=0, n_random_starts=10)
+
+    print('Saving the optimization object: ')
+    dump(res_gp, SKOPTPATH + 'skopt' + VERSION_NUM + '.gz')
+    print('sk opt object saved')
+    print('Best score= %.10f' % (res_gp.fun))
+    print('minimum loc: ', res_gp.x)
+    
+
+    '''
+    space = [Integer(3, 10, name='max_depth'),
+             Integer(6, 30, name='num_leaves'),
+             Integer(20, 200, name='min_child_samples'),
+             Real(100, 400,  name='scale_pos_weight'),
+             Real(0.2, 0.7, name='subsample'),
+             Real(0.2, 0.7, name='colsample_bytree'),
+             Integer(50, 255, name='max_bin')
+            ]
+    '''
+    print("""Best parameters:
+            - max_depth=%d
+            - num_leaves=%d
+            - min_child_samples=%d
+            - scale_pos_weight=%d
+            - subsample=%.4f
+            - colsample_bytree=%.4f
+            - max_bin=%.4f""" % (res_gp.x[0], res_gp.x[1], 
+                                        res_gp.x[2], res_gp.x[3], 
+                                        res_gp.x[4], res_gp.x[5],
+                                        res_gp.x[6]))
 
 
-    # Using LightGBM with Bayesian Parameter Tuning optimization
-    early_stopping_rounds = 50
-    verbose_eval = True
-    num_boost_round = 1000
+    # print("\nModel Report")
+    # print("bst.best_iteration: ", bst.best_iteration)
+    # print(metrics + ":", evals_results['valid'][metrics][bst.best_iteration - 1])
 
-    lgb_params = {
-        'max_depth': 3,  # -1 means no limit
-        'num_leaves': 7,  # 2^max_depth - 1
-        'subsample': 0.3,  # Subsample ratio of the training instance.
-        'colsample_bytree': 0.3,  # Subsample ratio of columns when constructing each tree.
-        'scale_pos_weight': 400,  # because training data is extremely unbalanced
-        'max_bin': 100,  # Number of bucketed bin for feature values
-        'min_child_samples': 100,  # Minimum number of data need in a child(min_data_in_leaf)
+    
 
+    # print('The required time for tuning hyperparameter is: hour:minute:second = %s' % (
+    #     datetime.timedelta(seconds=time.time() - start_time)))
 
-        'boosting_type': 'gbdt',
-        'objective': 'binary',
-        'metric': 'auc',
-        'learning_rate': 0.1,
-        'subsample_freq': 1,  # frequence of subsample, <=0 means no enable
-        'min_child_weight': 0,  # Minimum sum of instance weight(hessian) needed in a child(leaf)
-        'subsample_for_bin': 200000,  # Number of samples for constructing bin
-        'min_split_gain': 0,  # lambda_l1, lambda_l2 and min_gain_to_split to regularization
-        'reg_alpha': 0,  # L1 regularization term on weights
-        'reg_lambda': 0,  # L2 regularization term on weights
-        'nthread': NUM_CORES,
-        'verbose': 0
-    }
+    # print('Saving the trained lightgbm model')
+    # bst.save_model(MODElPATH + 'bst' + VERSION_NUM + '.txt')
 
-    evals_results = {}
-    print('LGB PARAMETER: ', lgb_params)
-    bst = lgb.train(lgb_params,
-                    xgtrain,
-                    valid_sets=[xgtrain, xgvalid],
-                    valid_names=['train', 'valid'],
-                    evals_result=evals_results,
-                    num_boost_round=num_boost_round,
-                    early_stopping_rounds=early_stopping_rounds,
-                    verbose_eval=10,
-                    feval=None)
+    # print('Re-reading test data...')
+    # test_df = pd.read_pickle(PICKLEPATH + 'test' + VERSION_NUM + '.pkl.gz')
+    # submission = pd.DataFrame()
 
-    print("\nModel Report")
-    print("bst.best_iteration: ", bst.best_iteration)
-    print(metrics + ":", evals_results['valid'][metrics][bst.best_iteration - 1])
+    # print('Predicting...')
+    # y_pred = bst.predict(test_df[predictors], num_iteration=bst.best_iteration)
 
-    print('The required time for model training is: hour:minute:second = %s' % (
-        datetime.timedelta(seconds=time.time() - start_time)))
+    # print('FEATURE IMPORTANCE: ')
+    # gain = bst.feature_importance('gain')
+    # ft = pd.DataFrame({'feature': bst.feature_name(), 'split': bst.feature_importance('split'),
+    #                    'gain': 100 * gain / gain.sum()}).sort_values('gain', ascending=False)
+    # ft.to_csv(FEATUREPATH + VERSION_NUM + '.csv')
+    # print(ft)
 
-    print('Saving the trained lightgbm model')
-    bst.save_model(MODElPATH + 'bst' + VERSION_NUM + '.txt')
+    # submission['click_id'] = test_df['click_id'].astype('uint32').values
+    # submission['is_attributed'] = y_pred
 
-    print('Re-reading test data...')
-    test_df = pd.read_pickle(PICKLEPATH + 'test' + VERSION_NUM + '.pkl.gz')
-    submission = pd.DataFrame()
+    # print('Saving the prediction result...')
+    # submission.to_csv(SUBMISSIONPATH+ 'submission' + VERSION_NUM + '.csv', index=False, float_format='%.9f')
 
-    print('Predicting...')
-    y_pred = bst.predict(test_df[predictors], num_iteration=bst.best_iteration)
-
-    print('FEATURE IMPORTANCE: ')
-    gain = bst.feature_importance('gain')
-    ft = pd.DataFrame({'feature': bst.feature_name(), 'split': bst.feature_importance('split'),
-                       'gain': 100 * gain / gain.sum()}).sort_values('gain', ascending=False)
-    ft.to_csv(FEATUREPATH + VERSION_NUM + '.csv')
-    print(ft)
-
-    submission['click_id'] = test_df['click_id'].astype('uint32').values
-    submission['is_attributed'] = y_pred
-
-    print('Saving the prediction result...')
-    submission.to_csv(SUBMISSIONPATH+ 'submission' + VERSION_NUM + '.csv', index=False, float_format='%.9f')
-
-    print('Done')
-    print(submission.head(3))
+    # print('Done')
+    # print(submission.head(3))
