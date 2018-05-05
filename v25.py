@@ -14,7 +14,7 @@ Experimenting with skopt's bayesian hyperparameter tuning
 '''
 
 # Data Constant definitions
-DEBUG = True
+DEBUG = False
 
 # Full dataset
 NCHUNK = 184903890
@@ -44,7 +44,7 @@ FEATUREPATH = 'feature/'
 SKOPTPATH = 'skopt/'
 
 # Performance stuff
-NUM_CORES = 4 if DEBUG else 8
+NUM_CORES = 4 if DEBUG else 16
 
 # Various Feature Engineering Techniques
 def do_count(df, group_cols, agg_name, agg_type='int32', show_max=False, show_agg=True):
