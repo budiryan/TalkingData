@@ -1,0 +1,21 @@
+Num train: 5m, Num val: 200000
+Best score= -0.9978072152
+Best parameters:
+            - max_depth=10
+            - num_leaves=30
+            - min_child_samples=20
+            - scale_pos_weight=100
+            - subsample=0.7000
+            - colsample_bytree=0.2000
+            - max_bin=50.0000
+
+Num train: 19m, Num val: 500000
+Best parameters:
+            - max_depth=10
+            - num_leaves=29
+            - min_child_samples=193
+            - scale_pos_weight=377
+            - subsample=0.6872
+            - colsample_bytree=0.2456
+            - max_bin=249
+
