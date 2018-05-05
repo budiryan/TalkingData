@@ -19,3 +19,13 @@ Best parameters:
             - colsample_bytree=0.2456
             - max_bin=249
 
+Num train: 40m, Num val: 2500000
+Best parameters:
+            - max_depth=4
+            - num_leaves=25
+            - min_child_samples=189
+            - scale_pos_weight=250
+            - subsample=0.6758
+            - colsample_bytree=0.6878
+            - max_bin=50
+
