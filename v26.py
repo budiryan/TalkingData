@@ -310,8 +310,8 @@ if __name__ == '__main__':
     # Load skopt's tuned parameter
     res_gp = skopt.load(SKOPTPATH + 'skopt' + '_v25_' + '.gz')
 
-    early_stopping_rounds = 50
-    num_boost_round = 1000
+    early_stopping_rounds = 60
+    num_boost_round = 1500
     verbose_eval = True
     lgb_params = {
         'max_depth': res_gp.x[0],  # -1 means no limit
