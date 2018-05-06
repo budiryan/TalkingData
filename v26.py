@@ -45,7 +45,7 @@ FEATUREPATH = 'feature/'
 SKOPTPATH = 'skopt/'
 
 # Performance stuff
-NUM_CORES = 4 if DEBUG else 16
+NUM_CORES = 4 if DEBUG else 8
 
 # Various Feature Engineering Techniques
 def do_count(df, group_cols, agg_name, agg_type='int32', show_max=False, show_agg=True):
@@ -273,13 +273,13 @@ if __name__ == '__main__':
 
     if not os.path.isfile(PICKLEPATH + 'train' + VERSION_NUM + '.pkl.gz'):
         print('Saving train file')
-        train_df.to_pickle(PICKLEPATH + 'train' + VERSION_NUM + '.pkl.gz')
+        # train_df.to_pickle(PICKLEPATH + 'train' + VERSION_NUM + '.pkl.gz')
     else:
         print('Train file is there, no need to save')
 
     if not os.path.isfile(PICKLEPATH + 'val' + VERSION_NUM + '.pkl.gz'):
         print('Saving val file')
-        val_df.to_pickle(PICKLEPATH + 'val' + VERSION_NUM + '.pkl.gz')
+        # val_df.to_pickle(PICKLEPATH + 'val' + VERSION_NUM + '.pkl.gz')
     else:
         print('Val file is there, no need to save')
 
