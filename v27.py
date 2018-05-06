@@ -219,6 +219,8 @@ if __name__ == '__main__':
     train_df, new_feat = do_var(train_df, ['device', 'day'], 'hour', 'device_day_hour_var', show_max=True); gc.collect(); predictors.append(new_feat)
     train_df, new_feat = do_var(train_df, ['ip', 'app', 'channel'], 'hour', 'ip_app_channel_var_hour', show_max=True);gc.collect(); predictors.append(new_feat)
     train_df, new_feat = do_var(train_df, ['ip', 'app'], 'hour', 'ip_app_var_hour', show_max=True); gc.collect(); predictors.append(new_feat)
+    train_df, new_feat = do_var(train_df, ['ip', 'device'], 'hour', 'ip_device_var_hour', show_max=True); gc.collect(); predictors.append(new_feat)
+
 
     # ip --> device
     train_df, new_feat = do_countuniq(train_df, ['ip'], 'device', 'ip_device_countuniq', 'uint32', True); gc.collect(); predictors.append(new_feat)
