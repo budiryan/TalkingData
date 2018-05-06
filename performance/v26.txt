@@ -1,0 +1,2 @@
+bst.best_iteration:  872
+auc: 0.9914446795584824
