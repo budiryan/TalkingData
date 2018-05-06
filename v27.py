@@ -45,7 +45,7 @@ FEATUREPATH = 'feature/'
 SKOPTPATH = 'skopt/'
 
 # Performance stuff
-NUM_CORES = 4 if DEBUG else 8
+NUM_CORES = 4 if DEBUG else 16
 
 # Various Feature Engineering Techniques
 def do_count(df, group_cols, agg_name, agg_type='int32', show_max=False, show_agg=True):
@@ -208,24 +208,17 @@ if __name__ == '__main__':
     train_df, new_feat = do_count(train_df, ['ip', 'app'], 'ip_app_count', show_max=True);gc.collect(); predictors.append(new_feat)
 
     # New mean features
-    train_df, new_feat = do_mean(train_df, ['ip', 'app', 'channel'], 'hour', 'ip_app_channel_mean_hour', show_max=True); gc.collect(); predictors.append(new_feat)
-    train_df, new_feat = do_mean(train_df, ['ip', 'app', 'channel', 'device' , 'os'], 'hour', 'ip_app_channel_device_os_mean_hour', show_max=True); gc.collect(); predictors.append(new_feat)
+    train_df, new_feat = do_mean(train_df, ['ip', 'channel'], 'hour', 'ip_channel_mean_hour', show_max=True); gc.collect(); predictors.append(new_feat)
     train_df, new_feat = do_mean(train_df, ['ip', 'app', 'os'], 'hour', 'ip_app_os_mean_hour', show_max=True); gc.collect(); predictors.append(new_feat)
     train_df, new_feat = do_mean(train_df, ['ip', 'app'], 'hour', 'ip_app_mean_hour', show_max=True); gc.collect(); predictors.append(new_feat)
+    train_df, new_feat = do_mean(train_df, ['ip', 'device'], 'hour', 'ip_device_mean_hour', show_max=True); gc.collect(); predictors.append(new_feat)
 
+    
     # New var features
     train_df, new_feat = do_var(train_df, ['channel', 'day'], 'hour', 'channel_day_hour_var', show_max=True); gc.collect(); predictors.append(new_feat)
     train_df, new_feat = do_var(train_df, ['device', 'day'], 'hour', 'device_day_hour_var', show_max=True); gc.collect(); predictors.append(new_feat)
     train_df, new_feat = do_var(train_df, ['ip', 'app', 'channel'], 'hour', 'ip_app_channel_var_hour', show_max=True);gc.collect(); predictors.append(new_feat)
-
-    # device, day --> hour
-    train_df, new_feat = do_countuniq(train_df, ['device', 'day'], 'hour', 'device_day_hour_countuniq', 'uint32', True); gc.collect(); predictors.append(new_feat)
-
-    # channel, day --> hour
-    train_df, new_feat = do_countuniq(train_df, ['channel', 'day'], 'hour', 'channel_day_hour_countuniq', 'uint32', True); gc.collect(); predictors.append(new_feat)
-
-    # ip, channel --> app
-    train_df, new_feat = do_countuniq(train_df, ['ip', 'channel'], 'app', 'ip_channel_app_countuniq', 'uint32', True); gc.collect(); predictors.append(new_feat)
+    train_df, new_feat = do_var(train_df, ['ip', 'app'], 'hour', 'ip_app_var_hour', show_max=True); gc.collect(); predictors.append(new_feat)
 
     # ip --> device
     train_df, new_feat = do_countuniq(train_df, ['ip'], 'device', 'ip_device_countuniq', 'uint32', True); gc.collect(); predictors.append(new_feat)
@@ -241,6 +234,7 @@ if __name__ == '__main__':
     train_df, new_feat = do_next_click(train_df, ['ip', 'app', 'channel', 'os'], 'next_click_4', 'int32', True); predictors.append(new_feat)
     train_df, new_feat = do_next_click(train_df, ['ip', 'app', 'device', 'os', 'channel'], 'next_click_5', 'int32', True); predictors.append(new_feat)
     train_df, new_feat = do_next_click(train_df, ['ip', 'os', 'device'], 'next_click_6', 'int32', True); predictors.append(new_feat)
+    train_df, new_feat = do_next_click(train_df, ['ip', 'channel'], 'next_click_7', 'int32', True); predictors.append(new_feat)
 
     # We do not do prev click
     train_df.drop(['click_time'], axis=1, inplace=True)
