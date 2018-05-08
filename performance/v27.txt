@@ -1,0 +1,2 @@
+Early stopping, best iteration is:
+[927]   train's auc: 0.987689   valid's auc: 0.991519
